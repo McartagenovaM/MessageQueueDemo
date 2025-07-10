@@ -12,14 +12,13 @@ using var channel = await connection.CreateChannelAsync();
 
 // ASCII banner
 Console.ForegroundColor = ConsoleColor.Green;
-Console.WriteLine("╔══════════════════════════════════════════════╗");
-Console.WriteLine("║         RabbitMQ Async Consumer 1            ║");
-Console.WriteLine("║                                              ║");
-Console.WriteLine("║       Reading messages from queue!           ║");
-Console.WriteLine("╚══════════════════════════════════════════════╝");
+Console.WriteLine("╔═════════════════════════════════════════════════╗");
+Console.WriteLine("║         RabbitMQ Async Worker Consumer 2        ║");
+Console.WriteLine("║                                                 ║");
+Console.WriteLine("║          Reading messages from queue!           ║");
+Console.WriteLine("╚═════════════════════════════════════════════════╝");
 Console.WriteLine();
 Console.ResetColor();
-
 
 //Add exchange declaration for Fanout reading from a queue
 await channel.ExchangeDeclareAsync(
@@ -32,7 +31,7 @@ await channel.ExchangeDeclareAsync(
 
 
 await channel.QueueDeclareAsync(
-    queue: "message_received-1",
+    queue: "message_received-2",
     durable: true,
     exclusive: false,
     autoDelete: false,
@@ -40,7 +39,7 @@ await channel.QueueDeclareAsync(
 );
 
 await channel.QueueBindAsync(
-    queue: "message_received-1",
+    queue: "message_received-2",
     exchange: "message_queue",
     routingKey: string.Empty
 );
@@ -63,9 +62,9 @@ consumer.ReceivedAsync += async (sender, eventArgs) =>
 };
 
 await channel.BasicConsumeAsync(
-    queue: "message_received-1",
+    queue: "message_received-2",
     autoAck: false,
     consumer: consumer
-);  
+);
 
 Console.ReadLine(); // Keep the application running to listen for messages

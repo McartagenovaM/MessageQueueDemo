@@ -30,13 +30,24 @@ class Program
         // Step 3: Declare the durable queue
         Console.WriteLine("[Declaring queue 'message_queue'...]");
         Console.WriteLine();
-        await channel.QueueDeclareAsync(
-            queue: "message_queue",
+        // Declare the exchange with Fanout type - Sends messages to all bound queues
+        await channel.ExchangeDeclareAsync(
+            exchange: "message_queue",
             durable: true,
-            exclusive: false,
             autoDelete: false,
-            arguments: null
+            type: ExchangeType.Fanout
         );
+
+        //declare the single queue with durable settings
+        //await channel.QueueDeclareAsync(
+        // queue: "message_queue",
+        // durable: true,
+        // exclusive: false,
+        // autoDelete: false,
+        // arguments: null
+        //);
+
+
 
         // Initialize random delay generator
         var rnd = new Random();
@@ -58,18 +69,30 @@ class Program
             var message = $"{guid} - {timestamp}";
             var body = Encoding.UTF8.GetBytes(message);
 
-            // Publish message
+            //// Publish message - to basic queue
+            //await channel.BasicPublishAsync(
+            //    exchange: string.Empty,
+            //    routingKey: "message_queue",
+            //    mandatory: true,
+            //    basicProperties: new BasicProperties { Persistent = true },
+            //    body: body
+            //);
+
+            // Publish message to fanout exchange   
             await channel.BasicPublishAsync(
-                exchange: string.Empty,
-                routingKey: "message_queue",
+                exchange: "message_queue",
+                routingKey: string.Empty,
                 mandatory: true,
                 basicProperties: new BasicProperties { Persistent = true },
                 body: body
             );
+
+
+
             Console.WriteLine($"Message Sent: {message}");
 
             // Random delay between 1 and 4 seconds
-            int delayMs = rnd.Next(1000, 4001);
+            int delayMs = rnd.Next(500, 2001);
             //Console.WriteLine($"Waiting {delayMs}ms before next message...");
             await Task.Delay(delayMs);
         }
