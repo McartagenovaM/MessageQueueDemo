@@ -39,13 +39,13 @@ class Program
         );
 
         //declare the single queue with durable settings
-        //await channel.QueueDeclareAsync(
-        // queue: "message_queue",
-        // durable: true,
-        // exclusive: false,
-        // autoDelete: false,
-        // arguments: null
-        //);
+        await channel.QueueDeclareAsync(
+         queue: "message_queue-3",
+         durable: true,
+         exclusive: false,
+         autoDelete: false,
+         arguments: null
+        );
 
 
 
@@ -69,14 +69,14 @@ class Program
             var message = $"{guid} - {timestamp}";
             var body = Encoding.UTF8.GetBytes(message);
 
-            //// Publish message - to basic queue
-            //await channel.BasicPublishAsync(
-            //    exchange: string.Empty,
-            //    routingKey: "message_queue",
-            //    mandatory: true,
-            //    basicProperties: new BasicProperties { Persistent = true },
-            //    body: body
-            //);
+            // Publish message - to basic queue
+            await channel.BasicPublishAsync(
+                exchange: string.Empty,
+                routingKey: "message_queue-3",
+                mandatory: true,
+                basicProperties: new BasicProperties { Persistent = true },
+                body: body
+            );
 
             // Publish message to fanout exchange   
             await channel.BasicPublishAsync(
