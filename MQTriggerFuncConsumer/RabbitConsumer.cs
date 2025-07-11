@@ -23,16 +23,5 @@ namespace MQTriggerFuncConsumer
         {
             _logger.LogInformation($"🔔 Mensaje recibido: {mensaje}");
         }
-
-        //// Si necesitas cabeceras, propiedades, etc.:
-        //[Function("ProcesarConArgs")]
-        //public void RunWithArgs(
-        //    [RabbitMQTrigger("mi-queue", ConnectionStringSetting = "RabbitMQConnection")]
-        //    BasicDeliverEventArgs args,
-        //    FunctionContext context)
-        //{
-        //    var cuerpo = Encoding.UTF8.GetString(args.Body.ToArray());
-        //    _logger.LogInformation($"🐇 Con Args: {cuerpo}");
-        //}
     }
 }

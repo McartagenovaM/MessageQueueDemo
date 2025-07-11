@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 using RabbitMQ.Client;
+using MqPublisherConsole.services;
 
 // RabbitMQ Publisher with ASCII UI, random delay, GUID + timestamp, exit on ESC key
 class Program
@@ -49,8 +50,23 @@ class Program
 
 
 
+
         // Initialize random delay generator
         var rnd = new Random();
+        // --- PREPARE EVENT GENERATORS ---
+
+        var eventGenerators = new List<Func<string>>
+        {
+            Customers.GenerateRandomCustomerJson,
+            InvoiceCreated.GenerateRandomInvoiceCreatedJson
+
+            // stub placeholders – implement these in services/PaymentReceived.cs, services/ProductDelivered.cs
+            //PaymentReceived.GenerateRandomPaymentReceivedJson,
+            //ProductDelivered.GenerateRandomProductDeliveredJson
+        };
+
+
+
 
         // Step 4: Publish messages until ESC is pressed
         Console.ForegroundColor = ConsoleColor.Cyan;
@@ -63,11 +79,23 @@ class Program
             if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
                 break;
 
-            // Prepare message content with GUID and timestamp
-            var guid = Guid.NewGuid();
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-            var message = $"{guid} - {timestamp}";
-            var body = Encoding.UTF8.GetBytes(message);
+            //// Prepare message content with GUID and timestamp
+            //var guid = Guid.NewGuid();
+            //var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            //var message = $"{guid} - {timestamp}";
+            //var body = Encoding.UTF8.GetBytes(message);
+
+            // Generate random customer JSON message
+            //string messageJson = Customers.GenerateRandomCustomerJson();
+
+            // 1) pick a random generator
+            int idx = rnd.Next(eventGenerators.Count);
+            Func<string> gen = eventGenerators[idx];
+
+            // 2) invoke it
+            string messageJson = gen();
+               
+            byte[] body = Encoding.UTF8.GetBytes(messageJson);
 
             // Publish message - to basic queue
             await channel.BasicPublishAsync(
@@ -89,7 +117,10 @@ class Program
 
 
 
-            Console.WriteLine($"Message Sent: {message}");
+            //Console.WriteLine($"Message Sent: {messageJson}");
+            // Print the header of the message
+            PrintHeader.Print(messageJson);
+
 
             // Random delay between 1 and 4 seconds
             int delayMs = rnd.Next(500, 2001);
