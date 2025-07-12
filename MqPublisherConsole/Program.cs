@@ -18,7 +18,7 @@ class Program
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("╔══════════════════════════════════════════════╗");
         Console.WriteLine("║         RabbitMQ Async Publisher             ║");
-        Console.WriteLine("║        (with Polly resilience)               ║");
+        Console.WriteLine("║         (with Polly resilience)              ║");
         Console.WriteLine("╚══════════════════════════════════════════════╝");
         Console.ResetColor();
 
