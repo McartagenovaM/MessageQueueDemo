@@ -8,6 +8,7 @@ using RabbitMQ.Client.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 class Program
@@ -98,6 +99,7 @@ class Program
 
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("[Info] Waiting for messages...");
+        Console.WriteLine();
         Console.ResetColor();
 
         // ─── Step 6: Configure consumer and start consuming ─────────────────
@@ -109,12 +111,78 @@ class Program
 
             try
             {
-                // Process the message
-                Console.WriteLine($"Received: {message}");
-                await Task.Delay(500); // simulate work
+                // 1) Parse the JSON and extract messageType
+                using var doc = JsonDocument.Parse(message);
+                var header = doc.RootElement.GetProperty("header");
+                string messageType = header.GetProperty("messageType").GetString();
 
-                // Acknowledge on success
-                await channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
+                // 2) Dispatch based on messageType
+                switch (messageType)
+                {
+                    case "InvoiceCreated":
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine("InvoiceCreated event received – generating invoice...");
+                        Console.ResetColor();
+
+                        // Extract invoice header
+                        var invoicePayload = doc.RootElement.GetProperty("payload");
+                        var invoiceHeader = invoicePayload.GetProperty("invoiceHeader");
+                        string invNum = invoiceHeader.GetProperty("invoiceNumber").GetString();
+                        string invDate = invoiceHeader.GetProperty("invoiceDate").GetString();
+                        string customer = invoiceHeader
+                                                 .GetProperty("customer")
+                                                 .GetProperty("name")
+                                                 .GetString();
+
+                        // Extract totals
+                        var totals = invoicePayload.GetProperty("totals");
+                        double subTotal = totals.GetProperty("subTotal").GetDouble();
+                        double tax = totals.GetProperty("tax").GetDouble();
+                        double grandTotal = totals.GetProperty("grandTotal").GetDouble();
+
+                        // Simulate printing a small invoice
+                        Console.WriteLine("────────────────────────────────");
+                        Console.WriteLine($"Invoice #: {invNum}");
+                        Console.WriteLine($"Date      : {invDate}");
+                        Console.WriteLine($"Customer  : {customer}");
+                        Console.WriteLine($"Subtotal  : {subTotal:C}");
+                        Console.WriteLine($"Tax (15%) : {tax:C}");
+                        Console.WriteLine($"Total     : {grandTotal:C}");
+                        Console.WriteLine("────────────────────────────────");
+                        Console.WriteLine();
+                        break;
+
+                    case "PaymentReceived":
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("PaymentReceived event received – issuing payment voucher...");
+                        Console.ResetColor();
+
+                        // Extract payment details
+                        var paymentPayload = doc.RootElement.GetProperty("payload");
+                        string payInvNum = paymentPayload.GetProperty("invoiceNumber").GetString();
+                        string payDate = paymentPayload.GetProperty("paymentDate").GetString();
+                        double amountPaid = paymentPayload.GetProperty("amount").GetDouble();
+                        string method = paymentPayload.GetProperty("paymentMethod").GetString();
+                        string receiptNo = paymentPayload.GetProperty("receiptNumber").GetString();
+
+                        // Simulate printing a payment voucher
+                        Console.WriteLine("===== PAYMENT VOUCHER =====");
+                        Console.WriteLine($"Invoice #:    {payInvNum}");
+                        Console.WriteLine($"Date:         {payDate}");
+                        Console.WriteLine($"Amount Paid:  {amountPaid:C}");
+                        Console.WriteLine($"Method:       {method}");
+                        Console.WriteLine($"Receipt #:    {receiptNo}");
+                        Console.WriteLine("===========================");
+                        Console.WriteLine();
+                        break;
+
+                    default:
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"Received {messageType}: no special handling configured.");
+                        Console.WriteLine();
+                        Console.ResetColor();
+                        break;
+                }
             }
             catch (Exception ex)
             {

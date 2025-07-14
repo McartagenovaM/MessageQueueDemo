@@ -8,6 +8,7 @@ using RabbitMQ.Client.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 class Program
@@ -96,8 +97,9 @@ class Program
             routingKey: string.Empty
         );
 
-        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.ForegroundColor = ConsoleColor.DarkYellow;
         Console.WriteLine("[Info] Waiting for messages...");
+        Console.WriteLine();
         Console.ResetColor();
 
         // ─── Step 6: Configure consumer and start consuming ─────────────────
@@ -109,11 +111,82 @@ class Program
 
             try
             {
-                // Process the message
-                Console.WriteLine($"Received: {message}");
-                await Task.Delay(500); // simulate work
+                // 1) Parse JSON and get messageType
+                using var doc = JsonDocument.Parse(message);
+                var header = doc.RootElement.GetProperty("header");
+                string messageType = header.GetProperty("messageType").GetString();
 
-                // Acknowledge on success
+                // 2) Print a fancy event banner
+                Console.WriteLine();  // blank line
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine($"╔════════════ {messageType.ToUpper()} EVENT ════════════╗");
+                Console.ResetColor();
+
+                // 3) Dispatch based on messageType
+                switch (messageType)
+                {
+                    case "NewCustomer":
+                        {
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine("✔ New Customer Request Received");
+                            Console.ResetColor();
+
+                            var p = doc.RootElement.GetProperty("payload");
+                            string first = p.GetProperty("FirstName").GetString();
+                            string last = p.GetProperty("LastName").GetString();
+                            string to = $"{first.ToLower()}.{last.ToLower()}@example.com";
+                            string subj = $"Welcome, {first} {last}!";
+
+                            Console.WriteLine($"  • Name   : {first} {last}");
+                            Console.WriteLine($"  • Email  : {to}");
+                            Console.WriteLine();
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine("📧 Sending Welcome Email...");
+                            Console.ResetColor();
+                            Console.WriteLine($"    → To     : {to}");
+                            Console.WriteLine($"    → Subject: {subj}");
+                        }
+                        break;
+
+                    case "ProductDelivered":
+                        {
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine("✔ Product Delivery Event Received");
+                            Console.ResetColor();
+
+                            var p = doc.RootElement.GetProperty("payload");
+                            string pid = p.GetProperty("productId").GetString();
+                            string carrier = p.GetProperty("carrier").GetString();
+                            string delivered = p.GetProperty("deliveryDate").GetString();
+
+                            Console.WriteLine($"  • Product ID  : {pid}");
+                            Console.WriteLine($"  • Carrier     : {carrier}");
+                            Console.WriteLine($"  • Delivered At: {delivered}");
+                            Console.WriteLine();
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine("📧 Sending Delivery Confirmation Email...");
+                            Console.ResetColor();
+                            Console.WriteLine($"    → To     : customer@example.com");
+                            Console.WriteLine($"    → Subject: Delivery Confirmation for {pid}");
+                            Console.WriteLine($"    → Body   : Your product {pid} was delivered by {carrier} at {delivered}.");
+                        }
+                        break;
+
+                    default:
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"⚠ No handler for messageType '{messageType}'");
+                        Console.ResetColor();
+                        break;
+                }
+
+                // 4) Footer line and spacing
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine($"╚════════════════════════════════════════════════╝");
+                Console.ResetColor();
+                Console.WriteLine();
+
+                // simulate processing time and ack
+                await Task.Delay(500);
                 await channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
             }
             catch (Exception ex)
